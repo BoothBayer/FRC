@@ -8,59 +8,57 @@
 package frc.robot;
 import java.util.concurrent.TimeUnit;
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.buttons.JoystickButton;
-
-import java.util.concurrent.TimeUnit;
 
 import com.kauailabs.navx.frc.AHRS;
 
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.controller.PIDController;
-import edu.wpi.first.wpilibj.command.Command;
-//import edu.wpi.first.wpilibj.PIDOutput;
-import edu.wpi.first.wpilibj.command.PIDSubsystem;
 import edu.wpi.first.wpilibj.PWMVictorSPX;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.drive.MecanumDrive;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.SerialPort;
 import edu.wpi.first.wpilibj.SPI;
-
-//import java.math.RoundingMode;
 import java.text.DecimalFormat;
 
 public class Robot extends TimedRobot {
   private Joystick joystick;
+  
   private PWMVictorSPX frontLeftMotor;
   private PWMVictorSPX rearLeftMotor;
   private PWMVictorSPX frontRightMotor;
   private PWMVictorSPX rearRightMotor;
-  private JoystickButton Bbutton;
-  private PIDController turnController;
+
+  private PIDController moveController;
   private AHRS m_gyro;
+  private double heading; 
 
-  private static final double kP = 0.02;
-  private static final double kI = 0.00;
-  private static final double kD = 0.01;
+  private static final double MkP = 0.05;
+  private static final double MkI = 0.00;
+  private static final double MkD = 0.005;
   
-
+  //Timer gyroUpdate;
+  
   MecanumDrive my_drive;
+  
   @Override
   public void robotInit() {
-    
     joystick = new Joystick(0);
-    Bbutton = new JoystickButton(joystick, 2);
-    frontLeftMotor = new PWMVictorSPX(0);
-    rearLeftMotor = new PWMVictorSPX(1);
+    
+    frontLeftMotor = new PWMVictorSPX(1);
+    rearLeftMotor = new PWMVictorSPX(3);
     frontRightMotor = new PWMVictorSPX(2);
-    rearRightMotor = new PWMVictorSPX(3);
+    rearRightMotor = new PWMVictorSPX(0);
 
     my_drive = new MecanumDrive(frontLeftMotor, rearLeftMotor, frontRightMotor, rearRightMotor);
+    
     m_gyro = new AHRS(SPI.Port.kMXP);
+    m_gyro.reset();
+    heading = getGyro();
+
+    moveController = new PIDController(MkP, MkI, MkD);
+    moveController.setIntegratorRange(-1, 1);
   }
 
-  private Double getGyro() {
-    DecimalFormat triDec = new DecimalFormat("###.###");
+  private double getGyro() {
+    DecimalFormat triDec = new DecimalFormat("###.#####");
     double gyro = m_gyro.getAngle();
     gyro = Double.parseDouble(triDec.format(gyro));
     return gyro;
@@ -72,18 +70,17 @@ public class Robot extends TimedRobot {
     
     boolean aimDone = false;
     double aimG = (getGyro() + 90);
-    turnController = new PIDController(kP, kI, kD);
     
     System.out.println(getGyro());
     System.out.println(aimG);
-    //turnController.disableContinuousInput();
 
     while (!aimDone){
-      mecMove(0, 0, turnController.calculate(getGyro(), aimG));
+      my_drive.driveCartesian(0, 0, moveController.calculate(getGyro(), aimG));
+      System.out.println(moveController.calculate(getGyro(), aimG));
 
       if ( (getGyro() >= (aimG - 3)) && ((getGyro()) <= (aimG + 3)) ){
         System.out.println("TURNED ~90 DEGREES");
-        //turnController.disableContinuousInput();
+        heading = getGyro();
         aimDone = true;
         break; 
       }
@@ -92,10 +89,16 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
-    if(Math.abs(joystick.getRawAxis(0)) < 0.02) {
-      my_drive.driveCartesian(joystick.getRawAxis(1), (joystick.getRawAxis(4) * -1), turnController.calculate(getGyro(), getGyro()));
+    //set heading when turn then correct all other movements
+    if(Math.abs(joystick.getRawAxis(0)) >= 0.05){
+      my_drive.driveCartesian(0, 0, joystick.getRawAxis(0));
+      heading = getGyro();
     }
-    my_drive.driveCartesian(joystick.getRawAxis(1), (joystick.getRawAxis(4)* -1), joystick.getRawAxis(0));
+    else{
+      //my_drive.driveCartesian(joystick.getRawAxis(1), (joystick.getRawAxis(4)), moveController.calculate(getGyro(), heading) );
+      my_drive.driveCartesian((joystick.getRawAxis(4) * -1), (joystick.getRawAxis(1)), 0 );
+    }
+
     if(joystick.getRawButton(2)){ // B button
       turn90();
     }
@@ -107,9 +110,5 @@ public class Robot extends TimedRobot {
     }
 
   }
-
-  public void mecMove(double value1, double value2, double value3)
-  {
-    my_drive.driveCartesian(value1, value2, value3);
-  }
 }
+
