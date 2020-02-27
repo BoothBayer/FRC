@@ -25,6 +25,8 @@ public class Robot extends TimedRobot {
   private PWMVictorSPX rearLeftMotor;
   private PWMVictorSPX frontRightMotor;
   private PWMVictorSPX rearRightMotor;
+  private PWMVictorSPX liftMotorHercules;
+  private PWMVictorSPX liftMotorWeak;
 
   private PIDController moveController;
   private AHRS m_gyro;
@@ -42,11 +44,12 @@ public class Robot extends TimedRobot {
   public void robotInit() {
     joystick = new Joystick(0);
     
-    frontLeftMotor = new PWMVictorSPX(1);
-    rearLeftMotor = new PWMVictorSPX(3);
-    frontRightMotor = new PWMVictorSPX(2);
-    rearRightMotor = new PWMVictorSPX(0);
-
+    frontLeftMotor = new PWMVictorSPX(7);
+    rearLeftMotor = new PWMVictorSPX(9);
+    frontRightMotor = new PWMVictorSPX(8);
+    rearRightMotor = new PWMVictorSPX(6);
+    liftMotorHercules = new PWMVictorSPX(0);
+    liftMotorWeak = new PWMVictorSPX(2);
     my_drive = new MecanumDrive(frontLeftMotor, rearLeftMotor, frontRightMotor, rearRightMotor);
     
     m_gyro = new AHRS(SPI.Port.kMXP);
@@ -89,24 +92,44 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
-    //set heading when turn then correct all other movements
+
     if(Math.abs(joystick.getRawAxis(0)) >= 0.05){
       my_drive.driveCartesian(0, 0, joystick.getRawAxis(0));
       heading = getGyro();
-    }
-    else{
+    } else{
       //my_drive.driveCartesian(joystick.getRawAxis(1), (joystick.getRawAxis(4)), moveController.calculate(getGyro(), heading) );
-      my_drive.driveCartesian((joystick.getRawAxis(4) * -1), (joystick.getRawAxis(1)), 0 );
+      my_drive.driveCartesian(joystick.getRawAxis(4), (joystick.getRawAxis(1)), 0 );
     }
 
-    if(joystick.getRawButton(2)){ // B button
-      turn90();
-    }
+    
     if(joystick.getRawButton(1)){ // A button
-      System.out.println(getGyro());
+      //System.out.println(getGyro());
+      System.out.println("A");
     }
-    if(joystick.getRawButton(3)){ // X button
+    
+    
+    if(joystick.getRawButton(5)){ //Left Shoulder Button
+      //Lift Down
+      System.out.println("DOWN");
+      liftMotorWeak.set(1);
+      liftMotorHercules.set(-0.2);
+    } else if (joystick.getRawButton(6)){ // Right Shoulder Button
+      //Lift Up
+      System.out.println("UP");
+      liftMotorWeak.set(-1); 
+      liftMotorHercules.set(0.5);
+    } else if(joystick.getRawButton(3)){ // X button
+      liftMotorWeak.set(1); //Down
       System.out.println("X");
+    }
+    else if(joystick.getRawButton(2)){ // B button
+      //turn90();
+      liftMotorWeak.set(-1); //UP
+    }
+    else {
+      //Halt Lift just incase
+      liftMotorHercules.set(0);
+      liftMotorWeak.set(0);
     }
 
   }
