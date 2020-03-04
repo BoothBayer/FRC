@@ -144,13 +144,13 @@ public class Robot extends TimedRobot {
     }
 
     if (joystick.getRawButton(2)){
-      shootMotor.set(1);
+      shootMotor.set(-1);
       System.out.println("SHOOT");
     } else{
       shootMotor.set(0);
     }
     if (joystick.getRawButton(4)){
-      loadMotor.set(1);
+      loadMotor.set(-1);
       System.out.println("LOAD");
     } else {
       loadMotor.set(0);
