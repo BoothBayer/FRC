@@ -27,7 +27,8 @@ public class Robot extends TimedRobot {
   private PWMVictorSPX rearRightMotor;
   private PWMVictorSPX liftMotorHercules;
   private PWMVictorSPX liftMotorWeak;
-
+  private PWMVictorSPX shootMotor;
+  private PWMVictorSPX loadMotor;
   private PIDController moveController;
   private AHRS m_gyro;
   private double heading; 
@@ -48,8 +49,10 @@ public class Robot extends TimedRobot {
     rearLeftMotor = new PWMVictorSPX(9);
     frontRightMotor = new PWMVictorSPX(8);
     rearRightMotor = new PWMVictorSPX(6);
-    liftMotorHercules = new PWMVictorSPX(0);
-    liftMotorWeak = new PWMVictorSPX(2);
+    liftMotorHercules = new PWMVictorSPX(2);
+    liftMotorWeak = new PWMVictorSPX(4);
+    shootMotor = new PWMVictorSPX(0);
+    loadMotor = new PWMVictorSPX(1);
     my_drive = new MecanumDrive(frontLeftMotor, rearLeftMotor, frontRightMotor, rearRightMotor);
     
     m_gyro = new AHRS(SPI.Port.kMXP);
@@ -95,10 +98,15 @@ public class Robot extends TimedRobot {
 
     if(Math.abs(joystick.getRawAxis(0)) >= 0.05){
       my_drive.driveCartesian(0, 0, joystick.getRawAxis(0));
+      heading = getGyro();  
+    } else if(Math.abs(joystick.getRawAxis(1)) >= 0.05) {
+      my_drive.driveCartesian(0, (joystick.getRawAxis(1) * -1), moveController.calculate(getGyro(), heading) );
+      //my_drive.driveCartesian((joystick.getRawAxis(4)), (joystick.getRawAxis(1) * -1), 0 );
+    } else if(Math.abs(joystick.getRawAxis(4)) >= 0.05) {
+      my_drive.driveCartesian(joystick.getRawAxis(4), 0, 0);
+    } else {
+      my_drive.driveCartesian(0, 0, 0);
       heading = getGyro();
-    } else{
-      //my_drive.driveCartesian(joystick.getRawAxis(1), (joystick.getRawAxis(4)), moveController.calculate(getGyro(), heading) );
-      my_drive.driveCartesian(joystick.getRawAxis(4), (joystick.getRawAxis(1)), 0 );
     }
 
     
@@ -108,28 +116,44 @@ public class Robot extends TimedRobot {
     }
     
     
-    if(joystick.getRawButton(5)){ //Left Shoulder Button
+    if(joystick.getRawButton(5)){ //Left Shoulder Button || DOWN LIFT
       //Lift Down
-      System.out.println("DOWN");
       liftMotorWeak.set(1);
       liftMotorHercules.set(-0.2);
-    } else if (joystick.getRawButton(6)){ // Right Shoulder Button
+    } else if (joystick.getRawButton(6)){ // Right Shoulder Button || UP LIFT
       //Lift Up
-      System.out.println("UP");
       liftMotorWeak.set(-1); 
       liftMotorHercules.set(0.5);
     } else if(joystick.getRawButton(3)){ // X button
-      liftMotorWeak.set(1); //Down
+      liftMotorWeak.set(1); //Spool Down Motor
       System.out.println("X");
     }
-    else if(joystick.getRawButton(2)){ // B button
-      //turn90();
-      liftMotorWeak.set(-1); //UP
-    }
-    else {
-      //Halt Lift just incase
+    /*else if(joystick.getRawButton(2)){ // B button
+      //Unspool Down Motor
+      liftMotorWeak.set(-1);
+    } else if (joystick.getRawButton(4)){ //A button
+      //Unspool Up Motor
+      liftMotorHercules.set(0.25);
+    } else if (joystick.getRawButton(1)){ //Y button
+      //Spool Up Motor
+      liftMotorHercules.set(-0.25);
+    }*/ else {
+      //Halt Lift
       liftMotorHercules.set(0);
       liftMotorWeak.set(0);
+    }
+
+    if (joystick.getRawButton(2)){
+      shootMotor.set(1);
+      System.out.println("SHOOT");
+    } else{
+      shootMotor.set(0);
+    }
+    if (joystick.getRawButton(4)){
+      loadMotor.set(1);
+      System.out.println("LOAD");
+    } else {
+      loadMotor.set(0);
     }
 
   }
