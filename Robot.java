@@ -143,15 +143,17 @@ public class Robot extends TimedRobot {
       liftMotorWeak.set(0);
     }
 
-    if (joystick.getRawButton(2)){
+    if (joystick.getRawButton(2)){ 
       shootMotor.set(-1);
       System.out.println("SHOOT");
     } else{
       shootMotor.set(0);
     }
     if (joystick.getRawButton(4)){
-      loadMotor.set(-1);
+      loadMotor.set(-0.75);
       System.out.println("LOAD");
+    } else if (joystick.getRawButton(3)){
+      loadMotor.set(0.45);
     } else {
       loadMotor.set(0);
     }
